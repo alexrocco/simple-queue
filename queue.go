@@ -1,5 +1,7 @@
 package main
 
+//go:generate mockgen -source=./queue.go -package=mock -destination=./mock/mock_queue.go Queue
+
 import (
 	"encoding/json"
 	"github.com/pkg/errors"
@@ -13,14 +15,22 @@ type item struct {
 	CreatedAt string      `json:"created_at"`
 }
 
-type Queue struct {
+// FileQueue implements Queue updating a file DB on every transaction
+type FileQueue struct {
 	items  []item
 	lock   sync.Mutex
 	dbPath string
 }
 
-//NewQueue creates a new Queue by parsing an existent db file
-func NewQueue(dbPath string) (*Queue, error) {
+type Queue interface {
+	// Add adds a new value to the bottom of the slice, to respect the FIFO data structure
+	Add(value interface{}) error
+	// Pop pops the first element in the slice and remove it, respecting the FIFO data structure
+	Pop() (interface{}, error)
+}
+
+//NewFileQueue creates a new FileQueue by parsing an existent db file
+func NewFileQueue(dbPath string) (*FileQueue, error) {
 	dbContent, err := os.ReadFile(dbPath)
 
 	items := make([]item, 0, 10)
@@ -48,7 +58,7 @@ func NewQueue(dbPath string) (*Queue, error) {
 		}
 	}
 
-	queue := &Queue{
+	queue := &FileQueue{
 		items:  items,
 		lock:   sync.Mutex{},
 		dbPath: dbPath,
@@ -57,8 +67,7 @@ func NewQueue(dbPath string) (*Queue, error) {
 	return queue, nil
 }
 
-// Add adds a new value to the bottom of the slice, to respect the FIFO data structure
-func (q *Queue) Add(value interface{}) error {
+func (q *FileQueue) Add(value interface{}) error {
 	q.lock.Lock()
 
 	q.items = append(q.items, item{
@@ -77,7 +86,7 @@ func (q *Queue) Add(value interface{}) error {
 }
 
 // Pop pops the first element in the slice and remove it, respecting the FIFO data structure
-func (q *Queue) Pop() (interface{}, error) {
+func (q *FileQueue) Pop() (interface{}, error) {
 	q.lock.Lock()
 
 	if len(q.items) == 0 {
@@ -103,7 +112,7 @@ func (q *Queue) Pop() (interface{}, error) {
 }
 
 // updateDB updates the DB file (JSON) after the slice has been updated
-func (q *Queue) updateDB() error {
+func (q *FileQueue) updateDB() error {
 	dbContent, err := json.Marshal(q.items)
 	if err != nil {
 		return err

@@ -34,7 +34,7 @@ func TestNewQueue(t *testing.T) {
 		err = dbFile.Close()
 		assert.NoError(t, err)
 
-		queue, err := NewQueue(dbFile.Name())
+		queue, err := NewFileQueue(dbFile.Name())
 		assert.NoError(t, err)
 
 		expectedItems := []item{
@@ -51,7 +51,7 @@ func TestNewQueue(t *testing.T) {
 	})
 	t.Run("It should create a db file when it does not exist", func(t *testing.T) {
 		testDBFile := filepath.Join(os.TempDir(), "db-file.json")
-		_, err := NewQueue(testDBFile)
+		_, err := NewFileQueue(testDBFile)
 		assert.NoError(t, err)
 
 		stat, err := os.Stat(testDBFile)
@@ -66,7 +66,7 @@ func TestNewQueue(t *testing.T) {
 func TestQueue_Add(t *testing.T) {
 	t.Run("It should add an item in an empty queue", func(t *testing.T) {
 		testDBFile := filepath.Join(os.TempDir(), "db-file.json")
-		queue, err := NewQueue(testDBFile)
+		queue, err := NewFileQueue(testDBFile)
 		assert.NoError(t, err)
 
 		expectedValue := "test"
@@ -101,7 +101,7 @@ func TestQueue_Add(t *testing.T) {
 		_, err = dbFile.Write(dbContent)
 		assert.NoError(t, err)
 
-		queue, err := NewQueue(dbPath)
+		queue, err := NewFileQueue(dbPath)
 		assert.NoError(t, err)
 
 		expectedValue := "new-value"
@@ -150,7 +150,7 @@ func TestQueue_Pop(t *testing.T) {
 		err = dbFile.Close()
 		assert.NoError(t, err)
 
-		queue, err := NewQueue(dbPath)
+		queue, err := NewFileQueue(dbPath)
 		assert.NoError(t, err)
 
 		gotValue, err := queue.Pop()
@@ -163,7 +163,7 @@ func TestQueue_Pop(t *testing.T) {
 		rand.Seed(time.Now().UnixNano())
 		dbPath := filepath.Join(os.TempDir(), fmt.Sprintf("%d", rand.Int()))
 
-		queue, err := NewQueue(dbPath)
+		queue, err := NewFileQueue(dbPath)
 		assert.NoError(t, err)
 
 		gotValue, err := queue.Pop()
