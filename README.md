@@ -1,5 +1,7 @@
 # Simple Queue
 
+[![codecov](https://codecov.io/gh/alexrocco/simple-queue/branch/master/graph/badge.svg?token=7GS1BOLHQV)](https://codecov.io/gh/alexrocco/simple-queue)
+
 A simple queue app that respects FIFO and saves the current queue in a file (JSON), and exposes the operations by an HTTP server.
 It also ensures that the operations, add and pop, are thread-safe by creating a shared lock between them.
 
